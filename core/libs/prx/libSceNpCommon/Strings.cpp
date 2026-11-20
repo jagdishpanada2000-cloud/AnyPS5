@@ -912,18 +912,23 @@ int APS5_VABI sceNpUtilXmlUnescape(char* dst, std::size_t dstSize, const char* s
 
 int APS5_VABI sceNpUtilGetNthChar(std::size_t index, const char* text, const char** character) {
     if (text == nullptr || character == nullptr) return NP_UTIL_ERROR_INVALID_ARGUMENT;
-    const char* position = text;
-    for (std::size_t i = 0; i < index && *position != '\0'; ++i) {
-        const auto lead = static_cast<unsigned char>(*position);
+    std::string source;
+    if (!ReadNpIdText(text, SIZE_MAX, source)) return NP_UTIL_ERROR_INVALID_ARGUMENT;
+    std::size_t offset = 0;
+    for (std::size_t i = 0; i < index && offset < source.size(); ++i) {
+        const auto lead = static_cast<unsigned char>(source[offset]);
         std::size_t length = 1;
         if (lead < 0x80) {
             if (!IsAllowedTextByte(lead)) return NP_UTIL_ERROR_INVALID_CHARACTER;
         } else {
             length = Utf8SequenceLength(lead);
-            if (length == 0 || !IsValidSequence(position, length)) return NP_UTIL_ERROR_INVALID_CHARACTER;
+            if (length == 0 || offset + length > source.size() || !IsValidSequence(source.data() + offset, length)) {
+                return NP_UTIL_ERROR_INVALID_CHARACTER;
+            }
         }
-        position += length;
+        offset += length;
     }
+    const char* position = text + offset;
     if (!GuestCopyOut_nid_no_patch(character, &position, sizeof(position))) return NP_UTIL_ERROR_INVALID_ARGUMENT;
     return 0;
 }

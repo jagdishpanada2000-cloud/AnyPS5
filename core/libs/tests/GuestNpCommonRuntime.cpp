@@ -1245,6 +1245,10 @@ void TestJsonText() {
     Require(sceNpUtilGetNthChar(2, "a\x01b", &character) == NpUtilInvalidCharacter, "control characters are refused");
     Require(sceNpUtilGetNthChar(0, "a", nullptr) == NpUtilInvalid, "null character destination is refused");
     Require(sceNpUtilGetNthChar(0, "a", reinterpret_cast<const char**>(0x10)) == NpUtilInvalid, "unwritable character destination is refused");
+    Require(sceNpUtilGetNthChar(0, reinterpret_cast<const char*>(0x10), &character) == NpUtilInvalid,
+        "an unmapped source string is refused");
+    Require(sceNpUtilGetNthChar(1, "\xE6\x97", &character) == NpUtilInvalidCharacter,
+        "a truncated final character is refused");
 
     char url[32] = {};
     Require(sceNpUtilHttpUrlEncode(url, sizeof(url), "a b=c*", 6, &length) == 0 && Equals(url, "a+b%3Dc*") && length == 9,
